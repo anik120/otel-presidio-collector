@@ -7,60 +7,30 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-// Config holds the settings for the Presidio redaction processor.
+// Config holds the settings for the redaction processor. Redaction is delegated
+// to a data-anonymizer HTTP service; the redaction policy (entities, allow/deny
+// lists, spaCy model) lives in that service, not in the collector.
 type Config struct {
-	// AnalyzerEndpoint is the base URL of the presidio-analyzer service.
-	AnalyzerEndpoint string `mapstructure:"analyzer_endpoint"`
-	// AnonymizerEndpoint is the base URL of the presidio-anonymizer service.
-	AnonymizerEndpoint string `mapstructure:"anonymizer_endpoint"`
+	// Endpoint is the base URL of the data-anonymizer service (it exposes POST /anonymize).
+	Endpoint string `mapstructure:"endpoint"`
 	// Attributes is the list of span attribute keys whose string values are redacted.
 	Attributes []string `mapstructure:"attributes"`
-	// Language is the Presidio analyzer language code (e.g. "en").
-	Language string `mapstructure:"language"`
-	// Replacement is the string substituted for detected PII.
-	Replacement string `mapstructure:"replacement"`
-	// Timeout bounds each HTTP call to Presidio.
+	// Timeout bounds each HTTP call to the service.
 	Timeout time.Duration `mapstructure:"timeout"`
-
-	// Entities restricts which PII types the analyzer detects (e.g. PERSON,
-	// EMAIL_ADDRESS). Empty means detect every default recognizer, which
-	// over-fires on technical text (dates, product names). Keep it focused.
-	Entities []string `mapstructure:"entities"`
-	// ScoreThreshold drops analyzer hits below this confidence (0.0-1.0).
-	// Raising it cuts NER false positives at the cost of missing weak matches.
-	ScoreThreshold float64 `mapstructure:"score_threshold"`
-	// AllowList is a set of terms the analyzer never flags (e.g. "Kubernetes").
-	AllowList []string `mapstructure:"allow_list"`
-	// BlockList is a set of terms always redacted, regardless of NER. Wired as a
-	// Presidio ad-hoc deny-list recognizer (e.g. "Red Hat").
-	BlockList []string `mapstructure:"block_list"`
 }
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		AnalyzerEndpoint:   "http://localhost:5002",
-		AnonymizerEndpoint: "http://localhost:5001",
-		Attributes:         []string{"request.input", "response.output", "rag.input"},
-		Language:           "en",
-		Replacement:        "<REDACTED>",
-		Timeout:            5 * time.Second,
-		Entities: []string{
-			"PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "CREDIT_CARD",
-			"US_SSN", "IP_ADDRESS", "IBAN_CODE", "LOCATION",
-			"CRYPTO", "US_PASSPORT", "US_DRIVER_LICENSE", "MEDICAL_LICENSE",
-		},
-		ScoreThreshold: 0.5,
-		AllowList:      nil,
+		Endpoint:   "http://localhost:5000",
+		Attributes: []string{"request.input", "response.output", "rag.input"},
+		Timeout:    10 * time.Second,
 	}
 }
 
-// Validate checks that the required endpoints are set.
+// Validate checks that the service endpoint is set.
 func (c *Config) Validate() error {
-	if c.AnalyzerEndpoint == "" {
-		return errors.New("analyzer_endpoint must be set")
-	}
-	if c.AnonymizerEndpoint == "" {
-		return errors.New("anonymizer_endpoint must be set")
+	if c.Endpoint == "" {
+		return errors.New("endpoint must be set")
 	}
 	return nil
 }

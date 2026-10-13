@@ -16,43 +16,12 @@ processors:
     limit_mib: 512
     spike_limit_mib: 128
   presidio:
-    analyzer_endpoint: http://localhost:5002
-    anonymizer_endpoint: http://localhost:5001
+    # The data-anonymizer service (wraps the Presidio SDK) exposes POST /anonymize.
+    # The redaction policy — which entities, allow/deny lists, spaCy model — is
+    # configured in that service, not here (see anonymizer-service/app.py).
+    endpoint: http://localhost:5000
     attributes: [request.input, response.output, rag.input]
-    language: en
-    replacement: "<REDACTED>"
-    timeout: 5s
-    # Restrict detection to real PII types. Without this, Presidio's default
-    # recognizers over-fire on technical text (dates like "2014", product names
-    # like "Kubernetes"/"kubelet" misread as PERSON/LOCATION).
-    entities:
-      - PERSON
-      - EMAIL_ADDRESS
-      - PHONE_NUMBER
-      - CREDIT_CARD
-      - US_SSN
-      - IP_ADDRESS
-      - IBAN_CODE
-      - LOCATION
-    # Drop low-confidence hits; raise toward ~0.6-0.85 to cut more false positives.
-    score_threshold: 0.5
-    # Terms the analyzer must never flag (domain vocabulary that NER misreads).
-    allow_list:
-      - Kubernetes
-      - K8s
-      - Docker
-      - Podman
-      - OpenShift
-      - CNCF
-      - etcd
-      - kubelet
-      - NFS
-      - Ceph
-      - Borg
-    # Terms always redacted, regardless of NER (wired as a deny-list recognizer).
-    block_list:
-      - Red Hat
-      - RedHat
+    timeout: 10s
   batch: {}
 
 exporters:

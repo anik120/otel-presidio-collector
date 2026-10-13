@@ -15,10 +15,10 @@ build: tidy ## Build the custom collector via OCB
 run: ## Run the collector against config.yaml
 	$(BIN) --config config.yaml
 
-deps-up: ## Start Presidio (analyzer+anonymizer) and Jaeger
-	podman compose -f docker-compose.yaml up -d
+deps-up: ## Build+start the data-anonymizer service and Jaeger
+	podman compose -f docker-compose.yaml up -d --build
 
-deps-down: ## Stop Presidio and Jaeger
+deps-down: ## Stop the data-anonymizer service and Jaeger
 	podman compose -f docker-compose.yaml down
 
 clean: ## Remove build output

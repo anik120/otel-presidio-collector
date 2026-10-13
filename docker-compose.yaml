@@ -1,18 +1,13 @@
-# Dependencies for the PoC: Presidio (analyzer + anonymizer) and Jaeger.
+# Dependencies for the PoC: the data-anonymizer service and Jaeger.
 # The custom collector itself runs as a host binary (make run) and owns :4317,
 # so Jaeger's OTLP is published on :4319 to avoid a clash.
 services:
-  presidio-analyzer:
-    image: mcr.microsoft.com/presidio-analyzer:latest
-    container_name: presidio-analyzer
+  data-anonymizer:
+    build:
+      context: ./anonymizer-service   # installs data-anonymizer from GitLab (see its Dockerfile)
+    container_name: data-anonymizer
     ports:
-      - "5002:3000"   # analyzer listens on 3000 in-container
-
-  presidio-anonymizer:
-    image: mcr.microsoft.com/presidio-anonymizer:latest
-    container_name: presidio-anonymizer
-    ports:
-      - "5001:3000"   # anonymizer listens on 3000 in-container
+      - "5000:8000"   # FastAPI wrapper: POST /anonymize
 
   jaeger:
     image: jaegertracing/all-in-one:latest
