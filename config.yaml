@@ -49,6 +49,10 @@ processors:
       - NFS
       - Ceph
       - Borg
+    # Terms always redacted, regardless of NER (wired as a deny-list recognizer).
+    block_list:
+      - Red Hat
+      - RedHat
   batch: {}
 
 exporters:

@@ -25,12 +25,23 @@ func newPresidioClient(cfg *Config) *presidioClient {
 	}
 }
 
+// blockedEntity is the entity type assigned to deny-list matches.
+const blockedEntity = "BLOCKED_TERM"
+
 type analyzeRequest struct {
-	Text           string   `json:"text"`
-	Language       string   `json:"language"`
-	Entities       []string `json:"entities,omitempty"`
-	ScoreThreshold float64  `json:"score_threshold,omitempty"`
-	AllowList      []string `json:"allow_list,omitempty"`
+	Text             string            `json:"text"`
+	Language         string            `json:"language"`
+	Entities         []string          `json:"entities,omitempty"`
+	ScoreThreshold   float64           `json:"score_threshold,omitempty"`
+	AllowList        []string          `json:"allow_list,omitempty"`
+	AdHocRecognizers []adHocRecognizer `json:"ad_hoc_recognizers,omitempty"`
+}
+
+type adHocRecognizer struct {
+	Name              string   `json:"name"`
+	SupportedLanguage string   `json:"supported_language"`
+	DenyList          []string `json:"deny_list"`
+	SupportedEntity   string   `json:"supported_entity"`
 }
 
 // analyzerResult matches one entry of the presidio-analyzer /analyze response
@@ -75,13 +86,27 @@ func (c *presidioClient) Redact(ctx context.Context, text string) (string, error
 }
 
 func (c *presidioClient) analyze(ctx context.Context, text string) ([]analyzerResult, error) {
-	body, err := json.Marshal(analyzeRequest{
+	req := analyzeRequest{
 		Text:           text,
 		Language:       c.cfg.Language,
 		Entities:       c.cfg.Entities,
 		ScoreThreshold: c.cfg.ScoreThreshold,
 		AllowList:      c.cfg.AllowList,
-	})
+	}
+	if len(c.cfg.BlockList) > 0 {
+		req.AdHocRecognizers = []adHocRecognizer{{
+			Name:              "block_list",
+			SupportedLanguage: c.cfg.Language,
+			DenyList:          c.cfg.BlockList,
+			SupportedEntity:   blockedEntity,
+		}}
+		// When entities are restricted, the deny-list's custom entity must be in
+		// the list too, or the analyzer filters its matches out.
+		if len(c.cfg.Entities) > 0 {
+			req.Entities = append(append([]string{}, c.cfg.Entities...), blockedEntity)
+		}
+	}
+	body, err := json.Marshal(req)
 	if err != nil {
 		return nil, err
 	}

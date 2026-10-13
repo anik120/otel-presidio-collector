@@ -31,6 +31,9 @@ type Config struct {
 	ScoreThreshold float64 `mapstructure:"score_threshold"`
 	// AllowList is a set of terms the analyzer never flags (e.g. "Kubernetes").
 	AllowList []string `mapstructure:"allow_list"`
+	// BlockList is a set of terms always redacted, regardless of NER. Wired as a
+	// Presidio ad-hoc deny-list recognizer (e.g. "Red Hat").
+	BlockList []string `mapstructure:"block_list"`
 }
 
 func createDefaultConfig() component.Config {
