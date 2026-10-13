@@ -1,8 +1,8 @@
-# otel-presidio-collector (PoC)
+# otel-presidio-collector 
 
 A custom OpenTelemetry Collector that runs a **Presidio PII-redaction processor**
-in the pipeline. It validates whether Presidio (NER-grade redaction: names,
-orgs, locations) can run as a collector processor, and measures the cost.
+in the pipeline. Uses https://gitlab.cee.redhat.com/uxe-data-ai-solutions/data-anonymizer
+as the Presidio implementation. 
 
 Module: `github.com/anik120/otel-presidio-collector` · collector version `0.0.1`
 (built on upstream OpenTelemetry `0.162.0`).
@@ -18,19 +18,9 @@ processor plus the smallest collector that can run it.
 
 See the design doc: `lightspeed-stack/docs/design/otel-collector-pii-redaction/design.md`.
 
-## Layout
+## Run the collector locally
 
-```
-builder-config.yaml                     OCB manifest (dist.version 0.0.1)
-config.yaml                             runtime collector config
-docker-compose.yaml                     Presidio analyzer+anonymizer + Jaeger
-processor/presidioprocessor/            the custom Go processor
-  factory.go  config.go  processor.go  client.go
-```
-
-## Run the PoC
-
-Prereqs: Go, `ocb`, podman.
+Prereqs: Go, [`ocb`](https://opentelemetry.io/docs/collector/extend/ocb/#install-the-opentelemetry-collector-builder), podman.
 
 ```bash
 make deps-up          # Presidio (5002 analyzer, 5001 anonymizer) + Jaeger (UI 16686)
@@ -38,8 +28,7 @@ make build            # OCB builds ./_build/otelcol-presidio
 make run              # collector listens OTLP on :4317, forwards to Jaeger :4319
 ```
 
-Then point LCORE at the collector and send a query with PII (reuses the existing
-LCORE OTel demo):
+Then point LCORE at the collector and send a query with PII:
 
 ```bash
 export OTEL_SDK_DISABLED=false
@@ -55,14 +44,6 @@ curl -s -X POST http://localhost:8080/v1/query \
 In Jaeger (http://localhost:16686), open the `query.handle_request` span. The
 `request.input` tag should show the **name, org, and email redacted** — the NER
 cases regex alone misses.
-
-## What to measure (the point of the PoC)
-
-- **Per-span latency** added by the analyze+anonymize round-trips.
-- **Memory / throughput under load** (the `memory_limiter` is wired in on
-  purpose) — a per-span HTTP call in the hot pipeline is where this strains.
-- **Operational cost**: a derived image off the supported line, plus a Presidio
-  sidecar and its spaCy model (~500MB `lg` / ~40MB `md` / ~12MB `sm`).
 
 ## Notes
 
