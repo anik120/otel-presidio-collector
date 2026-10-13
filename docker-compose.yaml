@@ -1,0 +1,24 @@
+# Dependencies for the PoC: Presidio (analyzer + anonymizer) and Jaeger.
+# The custom collector itself runs as a host binary (make run) and owns :4317,
+# so Jaeger's OTLP is published on :4319 to avoid a clash.
+services:
+  presidio-analyzer:
+    image: mcr.microsoft.com/presidio-analyzer:latest
+    container_name: presidio-analyzer
+    ports:
+      - "5002:3000"   # analyzer listens on 3000 in-container
+
+  presidio-anonymizer:
+    image: mcr.microsoft.com/presidio-anonymizer:latest
+    container_name: presidio-anonymizer
+    ports:
+      - "5001:3000"   # anonymizer listens on 3000 in-container
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686" # Jaeger UI
+      - "4319:4317"   # Jaeger OTLP gRPC (host 4319; collector binary owns 4317)

@@ -1,0 +1,43 @@
+# Runtime config for the PoC collector.
+# LCORE exports OTLP to this collector on :4317; the presidio processor redacts
+# span content; spans are forwarded to Jaeger (OTLP on host :4319 — see
+# docker-compose.yaml, which keeps :4317 free for this collector binary).
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+  presidio:
+    analyzer_endpoint: http://localhost:5002
+    anonymizer_endpoint: http://localhost:5001
+    attributes: [request.input, response.output, rag.input]
+    language: en
+    replacement: "<REDACTED>"
+    timeout: 5s
+  batch: {}
+
+exporters:
+  debug:
+    verbosity: detailed
+  otlp/jaeger:
+    endpoint: localhost:4319
+    tls:
+      insecure: true
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, presidio, batch]
+      exporters: [otlp/jaeger, debug]
+  telemetry:
+    logs:
+      level: info

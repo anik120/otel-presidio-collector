@@ -1,0 +1,36 @@
+# OpenTelemetry Collector Builder (OCB) manifest for the Presidio redaction PoC.
+# Build:  ocb --config builder-config.yaml   (or: make build)
+#
+# This is a MINIMAL distribution — just enough to prove the custom Presidio
+# processor works and to measure its latency/memory. It is NOT the RHOSDT
+# component set; once the processor is proven, port it into a fork of
+# github.com/openshift/redhat-opentelemetry-collector/manifest.yaml.
+dist:
+  module: github.com/anik120/otel-presidio-collector
+  name: otelcol-presidio
+  description: Custom OTel Collector with a Presidio PII-redaction processor (PoC)
+  output_path: ./_build
+  version: 0.0.1
+  otelcol_version: 0.162.0
+
+receivers:
+  - gomod: go.opentelemetry.io/collector/receiver/otlpreceiver v0.162.0
+
+processors:
+  - gomod: go.opentelemetry.io/collector/processor/memorylimiterprocessor v0.162.0
+  - gomod: go.opentelemetry.io/collector/processor/batchprocessor v0.162.0
+  - gomod: github.com/anik120/otel-presidio-collector/processor/presidioprocessor v0.0.1
+
+exporters:
+  - gomod: go.opentelemetry.io/collector/exporter/debugexporter v0.162.0
+  - gomod: go.opentelemetry.io/collector/exporter/otlpexporter v0.162.0
+
+providers:
+  - gomod: go.opentelemetry.io/collector/confmap/provider/envprovider v1.68.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/fileprovider v1.68.0
+  - gomod: go.opentelemetry.io/collector/confmap/provider/yamlprovider v1.68.0
+
+# The custom processor lives in-tree; point its module at the local source.
+# Path is relative to the generated go.mod under output_path (./_build).
+replaces:
+  - github.com/anik120/otel-presidio-collector/processor/presidioprocessor => ../processor/presidioprocessor
