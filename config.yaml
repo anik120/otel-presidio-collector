@@ -22,6 +22,33 @@ processors:
     language: en
     replacement: "<REDACTED>"
     timeout: 5s
+    # Restrict detection to real PII types. Without this, Presidio's default
+    # recognizers over-fire on technical text (dates like "2014", product names
+    # like "Kubernetes"/"kubelet" misread as PERSON/LOCATION).
+    entities:
+      - PERSON
+      - EMAIL_ADDRESS
+      - PHONE_NUMBER
+      - CREDIT_CARD
+      - US_SSN
+      - IP_ADDRESS
+      - IBAN_CODE
+      - LOCATION
+    # Drop low-confidence hits; raise toward ~0.6-0.85 to cut more false positives.
+    score_threshold: 0.5
+    # Terms the analyzer must never flag (domain vocabulary that NER misreads).
+    allow_list:
+      - Kubernetes
+      - K8s
+      - Docker
+      - Podman
+      - OpenShift
+      - CNCF
+      - etcd
+      - kubelet
+      - NFS
+      - Ceph
+      - Borg
   batch: {}
 
 exporters:

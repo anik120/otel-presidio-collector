@@ -21,6 +21,16 @@ type Config struct {
 	Replacement string `mapstructure:"replacement"`
 	// Timeout bounds each HTTP call to Presidio.
 	Timeout time.Duration `mapstructure:"timeout"`
+
+	// Entities restricts which PII types the analyzer detects (e.g. PERSON,
+	// EMAIL_ADDRESS). Empty means detect every default recognizer, which
+	// over-fires on technical text (dates, product names). Keep it focused.
+	Entities []string `mapstructure:"entities"`
+	// ScoreThreshold drops analyzer hits below this confidence (0.0-1.0).
+	// Raising it cuts NER false positives at the cost of missing weak matches.
+	ScoreThreshold float64 `mapstructure:"score_threshold"`
+	// AllowList is a set of terms the analyzer never flags (e.g. "Kubernetes").
+	AllowList []string `mapstructure:"allow_list"`
 }
 
 func createDefaultConfig() component.Config {
@@ -31,6 +41,13 @@ func createDefaultConfig() component.Config {
 		Language:           "en",
 		Replacement:        "<REDACTED>",
 		Timeout:            5 * time.Second,
+		Entities: []string{
+			"PERSON", "EMAIL_ADDRESS", "PHONE_NUMBER", "CREDIT_CARD",
+			"US_SSN", "IP_ADDRESS", "IBAN_CODE", "LOCATION",
+			"CRYPTO", "US_PASSPORT", "US_DRIVER_LICENSE", "MEDICAL_LICENSE",
+		},
+		ScoreThreshold: 0.5,
+		AllowList:      nil,
 	}
 }
 

@@ -26,8 +26,11 @@ func newPresidioClient(cfg *Config) *presidioClient {
 }
 
 type analyzeRequest struct {
-	Text     string `json:"text"`
-	Language string `json:"language"`
+	Text           string   `json:"text"`
+	Language       string   `json:"language"`
+	Entities       []string `json:"entities,omitempty"`
+	ScoreThreshold float64  `json:"score_threshold,omitempty"`
+	AllowList      []string `json:"allow_list,omitempty"`
 }
 
 // analyzerResult matches one entry of the presidio-analyzer /analyze response
@@ -72,7 +75,13 @@ func (c *presidioClient) Redact(ctx context.Context, text string) (string, error
 }
 
 func (c *presidioClient) analyze(ctx context.Context, text string) ([]analyzerResult, error) {
-	body, err := json.Marshal(analyzeRequest{Text: text, Language: c.cfg.Language})
+	body, err := json.Marshal(analyzeRequest{
+		Text:           text,
+		Language:       c.cfg.Language,
+		Entities:       c.cfg.Entities,
+		ScoreThreshold: c.cfg.ScoreThreshold,
+		AllowList:      c.cfg.AllowList,
+	})
 	if err != nil {
 		return nil, err
 	}
